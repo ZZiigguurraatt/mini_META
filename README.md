@@ -26,7 +26,7 @@ mini_META is a test suite for validation testing of taproot assets lightning cha
 
 - Initialize the network
     - Open a new terminal
-    - `docker exec -it controller init_network`
+    - `docker exec -it mini_meta-controller-1 init_network`
         - Only need to run after first build
         - Mines some blocks, distributes BTC to each node, mints assets, makes TCP connections between nodes, synchronizes universes, and opens initial channels.
 
