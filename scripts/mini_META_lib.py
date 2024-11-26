@@ -43,6 +43,9 @@ for node_name, node_config in litd_nodes.items():
 
 
 def SendAssetToFro(receiver,sender,amount,TheAssetID):
+
+    print(sender+' sending '+ str(amount)+' of '+TheAssetID.hex()+' to '+receiver+' on chain')
+
     TheAssetAddress=litd_node_objects[receiver]['tapd'].new_addr(asset_id=TheAssetID,amt=amount).encoded
     litd_node_objects[sender]['tapd'].send_asset(tap_addrs=[TheAssetAddress,])
 
@@ -53,7 +56,9 @@ def SendAssetToFro(receiver,sender,amount,TheAssetID):
 
 
 def OpenTaprootAssetChannel(funder,peer,AssetID):
-    #open a taproot asset channels
+    '''open a taproot asset channels'''
+
+    print(funder+' funding a '+AssetID.hex()+' channel with '+peer)
 
     #if this messes up, need to abandon channels on both peers
 #change fund_taprootasset_channel to accept hex like open_channel?????
@@ -68,7 +73,9 @@ def OpenTaprootAssetChannel(funder,peer,AssetID):
 
 
 def OpenRegularChannel(funder,peer):
-    #open a regular channels
+    '''open a regular channels'''
+
+    print(funder+' funding a normal sats channel with '+peer)
 
     litd_node_objects[funder]['lnd'].open_channel(node_pubkey=litd_node_objects[peer]['lnd'].get_info().identity_pubkey, local_funding_amount=50000, sat_per_byte=10)
 
@@ -82,6 +89,10 @@ def OpenRegularChannel(funder,peer):
 
 
 def SendTaprootAssetReceiveTaprootAsset(sender,firstHop,lastHop,receiver,amount,TheAsset):
+
+    print('=======================================================================================')
+    print(sender+' sending '+str(amount)+' of '+TheAsset.hex()+' via '+firstHop+' and '+receiver+' receiving '+TheAsset.hex()+' via '+lastHop)
+    print('=======================================================================================')
 
     # seems to need the pubkey if two channels of the same asset even if both channels are to the same peer
     TheInvoice=litd_node_objects[receiver]['tapd'].add_taprootasset_invoice(asset_id=TheAsset,asset_amount=amount,peer_pubkey=bytes.fromhex(litd_node_objects[lastHop]['lnd'].get_info().identity_pubkey))
@@ -97,6 +108,10 @@ def SendTaprootAssetReceiveTaprootAsset(sender,firstHop,lastHop,receiver,amount,
 
 def SendTaprootAssetReceiveSats(sender,firstHop,receiver,amount,TheAsset):
 
+    print('=======================================================================================')
+    print(sender+' sending '+str(amount)+' of '+TheAsset.hex()+' via '+firstHop+' and '+receiver+' receiving sats')
+    print('=======================================================================================')
+
     TheInvoice=litd_node_objects[receiver]['lnd'].add_invoice(amount)
     TheInvoice_raw=TheInvoice.payment_request
 
@@ -109,6 +124,10 @@ def SendTaprootAssetReceiveSats(sender,firstHop,receiver,amount,TheAsset):
 
 
 def SendSatsReceiveTaprootAsset(sender,lastHop,receiver,amount,TheAsset):
+
+    print('=======================================================================================')
+    print(sender+' sending '+str(amount)+' sats and '+receiver+' receiving '+TheAsset.hex()+' via '+lastHop)
+    print('=======================================================================================')
 
     # seems to need the pubkey if two channels of the same asset even if both channels are to the same peer
     TheInvoice=litd_node_objects[receiver]['tapd'].add_taprootasset_invoice(asset_id=TheAsset,asset_amount=amount,peer_pubkey=bytes.fromhex(litd_node_objects[lastHop]['lnd'].get_info().identity_pubkey))

@@ -20,7 +20,7 @@ except:
     except:
         pass
 
-# mine some blocks
+print('mine some blocks')
 MiningAddress=bitcoin.rpc.RawProxy(service_url=bitcoindHost).getnewaddress()
 bitcoin.rpc.RawProxy(service_url=bitcoindHost).generatetoaddress(200,MiningAddress)
 
@@ -46,9 +46,11 @@ for node_name, litd_node_object in litd_node_objects.items():
 
 
 # mint asset
+print('alice: mint an asset')
 litd_node_objects['alice']['tapd'].mint_asset(name='Asset1',amount=10000)
 
 # finalize batch (add to a transaction, sign, and broadcast)
+print('alice: finalize batch')
 litd_node_objects['alice']['tapd'].finalize_batch()
 
 # mine some blocks so the asset is usable
@@ -66,10 +68,12 @@ TheAssetID=litd_node_objects['alice']['tapd'].list_assets().assets[0].asset_gene
 # first need to make sure connected to the peer before trying to open a channel
 # so, connect all nodes to each other over TCP
 # also sync all universes
+print('making TCP connections between nodes')
+print()
 for node_name, litd_node_object in litd_node_objects.items():
     for node_name2, litd_node_object2 in litd_node_objects.items():
         if node_name != node_name2:     # must only connect to another node
-            print('connecting '+node_name+' to '+node_name2)
+            #print('connecting '+node_name+' to '+node_name2)
 
 
             #print(litd_node_object['lnd'].get_info())
@@ -91,7 +95,7 @@ for node_name, litd_node_object in litd_node_objects.items():
 
             for peer in litd_node_object['lnd'].list_peers().peers:
                 if peer.pub_key==PeerToConnectTo2:
-                    print(node_name+' already connected to '+node_name2)
+                    #print(node_name+' already connected to '+node_name2)
                     break
             else:
                 #litd_node_object['lnd'].connect_peer(*PeerToConnectToAddress2)
@@ -102,7 +106,7 @@ for node_name, litd_node_object in litd_node_objects.items():
 
             print('syncing the universe of '+node_name+' to '+node_name2)
             litd_node_object['tapd'].sync_universe(universe_host=PeerToConnectToAddress2.split(':')[0]+':8443', sync_mode=1)
-
+print()
 
 
 
