@@ -8,17 +8,17 @@ TheAssetID=litd_node_objects['alice']['tapd'].list_assets().assets[0].asset_gene
 
 
 #works, no EOF error
-SendSatsReceiveTaprootAsset('bob','edward','frank',5,TheAssetID)                        # 4 hops
+SendSatsReceiveTaprootAsset('bob','edward','frank',5,TheAssetID)                        # 4 hops (also goes through charlie and dave)
 
 
-# works but has EOF error
+# works but has EOF error. see https://github.com/lightninglabs/taproot-assets/issues/1216
 #SendTaprootAssetReceiveTaprootAsset('alice','bob','alice','bob',5,TheAssetID)          # 1 hop
 #SendTaprootAssetReceiveTaprootAsset('edward','frank','edward','frank',5,TheAssetID)    # 1 hop
 
 
 
-# fails
-#SendTaprootAssetReceiveTaprootAsset('alice','bob','edward','frank',5,TheAssetID)       # 5 hops
+# FAILURE_REASON_NO_ROUTE. is this a known issue?
+#SendTaprootAssetReceiveTaprootAsset('alice','bob','edward','frank',5,TheAssetID)       # 5 hops (also goes through charlie and dave)
 #SendTaprootAssetReceiveSats('alice','bob','charlie',10,TheAssetID)                     # 2 hops
 
 
