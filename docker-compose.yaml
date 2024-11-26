@@ -1,0 +1,377 @@
+
+version: '3'
+
+
+
+
+
+networks:
+  mini_META_net:
+    ipam:
+      config:
+        - subnet: 172.99.0.0/16
+          gateway: 172.99.0.1
+
+
+
+
+# define a template to build all node services off of
+x-node_template: &x-node_template
+    user: 1000:1000
+    expose:
+      - '9735'
+      - '8443'
+    depends_on:
+      - litd_main
+    image: litd_main_image
+    restart: unless-stopped
+
+
+
+
+services:
+
+  litd_base:               # this container runs once and is only here as a hack to make sure the base image for litd_base_image is automatically built
+
+    image: litd_base_image
+    build:
+#        context: https://github.com/lightninglabs/lightning-terminal.git#update-to-lnd-18-4         # note: URL needs to include a ".git"
+#        context: https://github.com/lightninglabs/lightning-terminal.git#648648410b9ea91b65c3a3c6de5b23654c90e2a5          # note: URL needs to include a ".git"
+        context: https://github.com/lightninglabs/lightning-terminal.git#d82cb9d275ad706207eebaa86ad68edb5ef055d3         # note: URL needs to include a ".git"
+
+
+        dockerfile: dev.Dockerfile
+        args:
+            # `docker build -t litd_base_image https://github.com/lightninglabs/lightning-terminal.git#update-to-lnd-18-4 -f dev.Dockerfile`
+            # seems to have BUILDKIT_CONTEXT_KEEP_GIT_DIR=1 by default and we need that because of https://github.com/lightninglabs/lightning-terminal/commit/b66e46b8729aa049c7c32852ad0f2765b4d652c2
+            # so, set it for docker compose too.
+            # see also:
+            #   - https://docs.docker.com/reference/dockerfile/#buildkit-built-in-build-args
+            #   - https://docs.docker.com/reference/compose-file/build/#args
+            BUILDKIT_CONTEXT_KEEP_GIT_DIR: 1
+
+    # just run a dummy command and exit
+    restart: no
+    entrypoint: "true"
+
+
+
+  litd_main:               # this container runs once and is only here as a hack to make sure the base image for litd_base_image is automatically built
+
+    depends_on:
+        - litd_base
+
+    image: litd_main_image
+
+    build:
+        context: .
+        dockerfile: Dockerfiles/litd_main.Dockerfile
+
+    # just run a dummy command and exit
+    restart: no
+    entrypoint: "true"
+
+
+
+
+
+
+  bitcoind:               # this container is used by all nodes to get blockchain data
+
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.2
+    expose:
+      - '28334'
+      - '28335'
+      - '28336'
+      - '18443'
+
+    image: polarlightning/bitcoind:27.0
+
+
+    restart: unless-stopped
+    command:
+    #  - 'bitcoind'
+      - '-server=1'
+      - '-regtest=1'
+      - '-rpcauth=polaruser:131838071435482436770fc423feb11b$57772bd535df949f64d0b1d7dc05392ba1215636414d594f045c498cd98a7f68'               # hashed password is also polaruser, https://jlopp.github.io/bitcoin-core-rpc-auth-generator/   <----- did not always work, so had to retry a few times??????
+      - '-debug=1'
+      - '-zmqpubrawblock=tcp://0.0.0.0:28334'
+      - '-zmqpubrawtx=tcp://0.0.0.0:28335'
+      - '-zmqpubhashblock=tcp://0.0.0.0:28336'
+      - '-txindex=1'
+      - '-dnsseed=0'
+      - '-upnp=0'
+      - '-rpcbind=0.0.0.0'
+      - '-rpcallowip=0.0.0.0/0'
+      - '-rpcport=18443'
+      - '-rpcthreads=40'
+      - '-rest'
+      - '-listen=1'
+      - '-listenonion=0'
+      - '-fallbackfee=0.0002'
+      - '-blockfilterindex=1'
+      - '-peerblockfilters=1'
+
+
+
+
+
+
+
+
+
+  controller:               # this container controls the network and runs the tests
+
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.3
+
+    volumes:
+      - ./:/mini_META/      # give the controller access to all node's data, scripts, and the docker compose setup
+
+    user: 1000:1000
+
+    image: controller_ubuntu
+    build:
+        context: .
+        dockerfile: Dockerfiles/controller.Dockerfile
+
+    # run a never ending command that does nothing so that we can use this container to manually run custom commands in.
+    restart: unless-stopped
+    entrypoint:
+        - sleep
+        - infinity
+
+
+
+
+
+
+
+
+
+
+
+
+
+#############################################################################################################
+# define test nodes
+#############################################################################################################
+
+
+
+
+  alice:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.4
+    volumes:
+      - ./net_data/alice/:/home/litd/
+
+
+  bob:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.5
+    volumes:
+      - ./net_data/bob/:/home/litd/
+
+
+  charlie:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.6
+    volumes:
+      - ./net_data/charlie/:/home/litd/
+
+
+  dave:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.7
+    volumes:
+      - ./net_data/dave/:/home/litd/
+
+
+  edward:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.8
+    volumes:
+      - ./net_data/edward/:/home/litd/
+
+
+  frank:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.9
+    volumes:
+      - ./net_data/frank/:/home/litd/
+
+
+  george:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.10
+    volumes:
+      - ./net_data/george/:/home/litd/
+
+
+  henry:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.11
+    volumes:
+      - ./net_data/henry/:/home/litd/
+
+
+  irina:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.12
+    volumes:
+      - ./net_data/irina/:/home/litd/
+
+  james:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.13
+    volumes:
+      - ./net_data/james/:/home/litd/
+
+
+  kevin:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.14
+    volumes:
+      - ./net_data/kevin/:/home/litd/
+
+
+  larry:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.15
+    volumes:
+      - ./net_data/larry/:/home/litd/
+
+
+  matt:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.16
+    volumes:
+      - ./net_data/matt/:/home/litd/
+
+
+  nicole:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.17
+    volumes:
+      - ./net_data/nicole/:/home/litd/
+
+
+  oliver:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.18
+    volumes:
+      - ./net_data/oliver/:/home/litd/
+
+
+  paul:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.19
+    volumes:
+      - ./net_data/paul/:/home/litd/
+
+
+  randy:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.20
+    volumes:
+      - ./net_data/randy/:/home/litd/
+
+
+  sam:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.21
+    volumes:
+      - ./net_data/sam/:/home/litd/
+
+
+  tom:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.22
+    volumes:
+      - ./net_data/tom/:/home/litd/
+
+
+  urban:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.23
+    volumes:
+      - ./net_data/urban/:/home/litd/
+
+
+  victor:
+    <<: *x-node_template
+    networks:
+      mini_META_net:
+        ipv4_address: 172.99.0.24
+    volumes:
+      - ./net_data/victor/:/home/litd/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#############################################################################################################
+
+
+
+
+
+
+
+

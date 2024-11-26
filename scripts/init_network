@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+
+from mini_META_lib import litd_node_objects, litd_nodes, SendAssetToFro, OpenTaprootAssetChannel, OpenRegularChannel, bitcoindHost
+
+import bitcoin.rpc
+
+
+
+# create a new wallet
+try:
+    # create wallet
+    bitcoin.rpc.RawProxy(service_url=bitcoindHost).createwallet('test')
+
+except:
+    # hopefully it is just that the wallet already exists
+
+    try:
+        # load wallet and remember to automatically load it every time bitcoind starts
+        bitcoin.rpc.RawProxy(service_url=bitcoindHost).loadwallet('test',True)
+    except:
+        pass
+
+# mine some blocks
+MiningAddress=bitcoin.rpc.RawProxy(service_url=bitcoindHost).getnewaddress()
+bitcoin.rpc.RawProxy(service_url=bitcoindHost).generatetoaddress(200,MiningAddress)
+
+
+
+
+
+
+
+#give all the nodes some BTC so they have something to work with
+for node_name, litd_node_object in litd_node_objects.items():
+    print('sending BTC to '+node_name)
+    bitcoin.rpc.RawProxy(service_url=bitcoindHost).sendtoaddress(litd_node_object['lnd'].next_addr().addr,1)
+
+    # mine some more blocks
+    bitcoin.rpc.RawProxy(service_url=bitcoindHost).generatetoaddress(10,MiningAddress)
+
+    print('walletbalance for '+node_name)
+    print(litd_node_object['lnd'].wallet_balance())
+
+
+
+
+
+# mint asset
+litd_node_objects['alice']['tapd'].mint_asset(name='Asset1',amount=10000)
+
+# finalize batch (add to a transaction, sign, and broadcast)
+litd_node_objects['alice']['tapd'].finalize_batch()
+
+# mine some blocks so the asset is usable
+bitcoin.rpc.RawProxy(service_url=bitcoindHost).generatetoaddress(20,MiningAddress)
+
+
+#TODO: make asset selection work for more than one asset
+TheAssetID=litd_node_objects['alice']['tapd'].list_assets().assets[0].asset_genesis.asset_id
+
+
+
+
+
+
+# first need to make sure connected to the peer before trying to open a channel
+# so, connect all nodes to each other over TCP
+# also sync all universes
+for node_name, litd_node_object in litd_node_objects.items():
+    for node_name2, litd_node_object2 in litd_node_objects.items():
+        if node_name != node_name2:     # must only connect to another node
+            print('connecting '+node_name+' to '+node_name2)
+
+
+            #print(litd_node_object['lnd'].get_info())
+
+
+            PeerToConnectTo=litd_node_object['lnd'].get_info().identity_pubkey
+            PeerToConnectTo2=litd_node_object2['lnd'].get_info().identity_pubkey
+
+            # doesn't work, need to configure nodes to provide this
+            #PeerToConnectToAddress=litd_node_object['lnd'].get_info().uris[0].split('@')
+            #PeerToConnectToAddress2=litd_node_object2['lnd'].get_info().uris[0].split('@')
+
+            # get IP address from the docker compose file instead
+            PeerToConnectToAddress=litd_nodes[node_name]['networks']['mini_META_net']['ipv4_address']+':9735'
+            PeerToConnectToAddress2=litd_nodes[node_name2]['networks']['mini_META_net']['ipv4_address']+':9735'
+
+
+            # doesn't seem to be a cleaner way to check if the peer is already connected, but if you try to connect and it is already connected, it will error, so avoid that
+
+            for peer in litd_node_object['lnd'].list_peers().peers:
+                if peer.pub_key==PeerToConnectTo2:
+                    print(node_name+' already connected to '+node_name2)
+                    break
+            else:
+                #litd_node_object['lnd'].connect_peer(*PeerToConnectToAddress2)
+                litd_node_object['lnd'].connect_peer(PeerToConnectTo2,PeerToConnectToAddress2)
+
+
+
+
+            print('syncing the universe of '+node_name+' to '+node_name2)
+            litd_node_object['tapd'].sync_universe(universe_host=PeerToConnectToAddress2.split(':')[0]+':8443', sync_mode=1)
+
+
+
+
+
+
+
+
+
+
+
+
+from time import sleep
+
+
+
+
+# open taproot assets edge channel
+OpenTaprootAssetChannel('alice','bob',TheAssetID)
+
+from time import sleep
+#getting
+#"UNKNOWN:Error received from peer ipv4:172.99.0.5:8443 {created_time:"2024-11-26T00:35:31.990431769-05:00", grpc_status:2, grpc_message:"channels cannot be created before the wallet is fully synced"}"
+#need to figure out why, but the sleep temporarily fixes it
+sleep(5)
+
+# open regular channels
+OpenRegularChannel('bob','charlie')
+
+from time import sleep
+#getting
+#"UNKNOWN:Error received from peer ipv4:172.99.0.5:8443 {created_time:"2024-11-26T00:35:31.990431769-05:00", grpc_status:2, grpc_message:"channels cannot be created before the wallet is fully synced"}"
+#need to figure out why, but the sleep temporarily fixes it
+sleep(5)
+
+
+OpenRegularChannel('charlie', 'dave')
+
+from time import sleep
+#getting
+#"UNKNOWN:Error received from peer ipv4:172.99.0.5:8443 {created_time:"2024-11-26T00:35:31.990431769-05:00", grpc_status:2, grpc_message:"channels cannot be created before the wallet is fully synced"}"
+#need to figure out why, but the sleep temporarily fixes it
+sleep(5)
+
+
+OpenRegularChannel('dave','edward')
+
+
+from time import sleep
+#getting
+#"UNKNOWN:Error received from peer ipv4:172.99.0.5:8443 {created_time:"2024-11-26T00:35:31.990431769-05:00", grpc_status:2, grpc_message:"channels cannot be created before the wallet is fully synced"}"
+#need to figure out why, but the sleep temporarily fixes it
+sleep(5)
+
+
+
+# open taproot assets edge channel
+SendAssetToFro('edward','alice',500,TheAssetID)
+
+OpenTaprootAssetChannel('edward','frank',TheAssetID)
+
+
+
+
+
+
+
+
+
+
+
+
+
+

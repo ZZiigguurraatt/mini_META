@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+
+from mini_META_lib import litd_node_objects, SendTaprootAssetReceiveTaprootAsset, SendTaprootAssetReceiveSats, SendSatsReceiveTaprootAsset
+
+
+#TODO: make asset selection work for more than one asset
+TheAssetID=litd_node_objects['alice']['tapd'].list_assets().assets[0].asset_genesis.asset_id
+
+
+#works, no EOF error
+SendSatsReceiveTaprootAsset('bob','edward','frank',5,TheAssetID)                        # 4 hops
+
+
+# works but has EOF error
+#SendTaprootAssetReceiveTaprootAsset('alice','bob','alice','bob',5,TheAssetID)          # 1 hop
+#SendTaprootAssetReceiveTaprootAsset('edward','frank','edward','frank',5,TheAssetID)    # 1 hop
+
+
+
+# fails
+#SendTaprootAssetReceiveTaprootAsset('alice','bob','edward','frank',5,TheAssetID)       # 5 hops
+#SendTaprootAssetReceiveSats('alice','bob','charlie',10,TheAssetID)                     # 2 hops
+
+
+
+

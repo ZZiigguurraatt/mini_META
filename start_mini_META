@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+
+# need to manually create the data store directory for each node because if let docker do it automatically and it does not exist, docker will assign
+# root permissions to each directory it creates and there is no way to get it to use any different permissions
+# note: #2 on this page seems to be wrong: https://hugotkk.github.io/posts/docker-volume-mounting-permissions-and-ownership-explained/ !
+
+mkdir -p net_data
+cd net_data
+mkdir -p alice bob charlie dave edward frank george henry irina james kevin larry matt nicole oliver paul randy sam tom urban victor
+cd ..
+
+
+docker compose up --build
+
+
+
