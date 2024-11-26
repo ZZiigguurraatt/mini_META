@@ -3,7 +3,7 @@
 
 ## Overview
 
-mini_META is a test suite for validation testing of the taproot assets lightning channels. It uses docker to create a small regtest network of 21 nodes. It is similiar to [Polar](https://lightningpolar.com/), but doesn't have a GUI, so it has the flexibility to run more experimental releases of lightning terminal (litd), and it automatically builds containers straight from the litd git repository.
+mini_META is a test suite for validation testing of taproot assets lightning channels. It uses docker to create a small regtest network of 21 nodes. It is similiar to [Polar](https://lightningpolar.com/), but doesn't have a GUI, so it has the flexibility to run more experimental releases of lightning terminal (litd), and it automatically builds containers straight from the litd git repository.
 
 
 
@@ -16,8 +16,8 @@ mini_META is a test suite for validation testing of the taproot assets lightning
 ## Usage
 
 - Install
-    - sudo apt install git docker-compose-v2
-    - git clone https://github.com/ZZiigguurraatt/mini_META
+    - `sudo apt install git docker-compose-v2`
+    - `git clone https://github.com/ZZiigguurraatt/mini_META`
 
 - Build and start the network
     - `cd mini_META`
