@@ -3,4 +3,7 @@
 # don't track data created by the test network
 net_data/
 
+# ignore cache files
+__pycache__
+
 
